@@ -1,15 +1,14 @@
 import express from "express"
 import { nanoid } from 'nanoid'
+import { client } from './../mongodb.mjs'
+
+const db = client.db("usertodo");
+const col = db.collection("todoes")
 const Router = express.Router()
 // not recommended at all - server should be stateless
-let posts = [
-    {
-        id: nanoid(),
-        text: "some post text"
-    }
-]
 
-Router.post("/post",(req ,res)=>{
+
+Router.post("/post", async(req ,res , next)=>{
     // console.log('this is signup!', new Date());
 
     if (
@@ -25,19 +24,41 @@ Router.post("/post",(req ,res)=>{
         return;
     }
 
-    posts.unshift({
+    const inserData = await col.insertOne({
         id: nanoid(),
-        text: req.body.text,
+        text: req.body.text
     })
+    console.log(inserData)
+    // posts.unshift({
+    //     id: nanoid(),
+    //     text: req.body.text,
+    // })
 
     res.send('post created');
 
 })
 
-Router.get('/posts', (req, res, next) => {
-    console.log('this is signup!', new Date());
-    res.send(posts);
+Router.get('/posts', async(req, res, next) => {
+
+    const cursor =  col.find({})
+    const results = await cursor.toArray()
+
+
+    res.send(results);
 })
 
+Router.delete("/post/:postId", async(req,res,next)=>{
+
+   const postId =  req.params.postId;
+
+   const post = await col.findOne({id: postId})
+   if(post){
+    col.deleteOne({id : postId})
+
+    res.send(postId)
+   }else{
+    res.send("disnet axist")
+   }
+})
 
 export default Router
